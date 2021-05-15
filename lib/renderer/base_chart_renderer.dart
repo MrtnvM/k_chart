@@ -18,12 +18,13 @@ abstract class BaseChartRenderer<T> {
     ..strokeWidth = 0.5
     ..color = Color(0xff4c5c74);
 
-  BaseChartRenderer(
-      {@required this.chartRect,
-      @required this.maxValue,
-      @required this.minValue,
-      @required this.topPadding,
-      @required this.fixedLength}) {
+  BaseChartRenderer({
+    @required this.chartRect,
+    @required this.maxValue,
+    @required this.minValue,
+    @required this.topPadding,
+    @required this.fixedLength,
+  }) {
     if (maxValue == minValue) {
       maxValue *= 1.5;
       minValue /= 2;

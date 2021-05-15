@@ -1,18 +1,17 @@
-// ignore_for_file: non_constant_identifier_names,library_prefixes,unused_import,camel_case_types
-mixin CandleEntity {
-  double open;
-  double high;
-  double low;
-  double close;
+// ignore_for_file: non_constant_identifier_names
 
-  List<double> maValueList;
+import 'package:flutter/foundation.dart';
 
-//  上轨线
-  double up;
-//  中轨线
-  double mb;
-//  下轨线
-  double dn;
+abstract class CandleEntity {
+  final double open;
+  final double high;
+  final double low;
+  final double close;
 
-  double BOLLMA;
+  CandleEntity({
+    @required this.open,
+    @required this.high,
+    @required this.low,
+    @required this.close,
+  });
 }

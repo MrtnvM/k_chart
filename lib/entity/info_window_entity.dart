@@ -1,8 +1,8 @@
 import '../entity/k_line_entity.dart';
 
 class InfoWindowEntity {
-  KLineEntity kLineEntity;
-  bool isLeft = false;
+  final KLineEntity kLineEntity;
+  final bool isLeft;
 
-  InfoWindowEntity(this.kLineEntity, this.isLeft);
+  InfoWindowEntity(this.kLineEntity, [this.isLeft = false]);
 }

@@ -9,17 +9,12 @@ import '../entity/info_window_entity.dart';
 import 'base_chart_painter.dart';
 import 'base_chart_renderer.dart';
 import 'main_renderer.dart';
-import 'secondary_renderer.dart';
-import 'vol_renderer.dart';
 
 class ChartPainter extends BaseChartPainter {
   static get maxScrollX => BaseChartPainter.maxScrollX;
-  BaseChartRenderer mMainRenderer, mVolRenderer, mSecondaryRenderer;
+
+  BaseChartRenderer mMainRenderer;
   StreamSink<InfoWindowEntity> sink;
-  Color upColor, dnColor;
-  Color ma5Color, ma10Color, ma30Color;
-  Color volColor;
-  Color macdColor, difColor, deaColor, jColor;
   List<Color> bgColor;
   int fixedLength;
   List<int> maDayList;
@@ -28,34 +23,28 @@ class ChartPainter extends BaseChartPainter {
   final ChartStyle chartStyle;
 
   ChartPainter(
-      this.chartStyle,
-      this.chartColors,
-      {@required datas,
-      @required scaleX,
-      @required scrollX,
-      @required isLongPass,
-      @required selectX,
-      mainState,
-      volHidden,
-      secondaryState,
-      this.sink,
-      bool isLine,
-      this.bgColor,
-      this.fixedLength,
-      this.maDayList})
-      : assert(bgColor == null || bgColor.length >= 2),
+    this.chartStyle,
+    this.chartColors, {
+    @required datas,
+    @required scaleX,
+    @required scrollX,
+    @required isLongPass,
+    @required selectX,
+    this.sink,
+    bool isLine,
+    this.bgColor,
+    this.fixedLength,
+    this.maDayList,
+  })  : assert(bgColor == null || bgColor.length >= 2),
         super(
-            chartStyle,
-            datas: datas,
-            scaleX: scaleX,
-            scrollX: scrollX,
-            isLongPress: isLongPass,
-            selectX: selectX,
-            mainState: mainState,
-            volHidden: volHidden,
-            secondaryState: secondaryState,
-            isLine: isLine
-      ) {
+          chartStyle,
+          datas: datas,
+          scaleX: scaleX,
+          scrollX: scrollX,
+          isLongPress: isLongPass,
+          selectX: selectX,
+          isLine: isLine,
+        ) {
     selectPointPaint = Paint()
       ..isAntiAlias = true
       ..strokeWidth = 0.5
@@ -78,63 +67,58 @@ class ChartPainter extends BaseChartPainter {
             NumberUtil.getMaxDecimalLength(t.open, t.close, t.high, t.low);
       }
     }
-    mMainRenderer ??= MainRenderer(mMainRect, mMainMaxValue, mMainMinValue,
-        mTopPadding, mainState, isLine, fixedLength, this.chartStyle, this.chartColors, maDayList);
-    if (mVolRect != null) {
-      mVolRenderer ??= VolRenderer(
-          mVolRect, mVolMaxValue, mVolMinValue, mChildPadding, fixedLength, this.chartStyle, this.chartColors);
-    }
-    if (mSecondaryRect != null)
-      mSecondaryRenderer ??= SecondaryRenderer(
-          mSecondaryRect,
-          mSecondaryMaxValue,
-          mSecondaryMinValue,
-          mChildPadding,
-          secondaryState,
-          fixedLength,
-          chartStyle,
-          chartColors);
+    mMainRenderer ??= MainRenderer(
+      mMainRect,
+      mMainMaxValue,
+      mMainMinValue,
+      mTopPadding,
+      isLine,
+      fixedLength,
+      this.chartStyle,
+      this.chartColors,
+      maDayList,
+    );
   }
 
   @override
   void drawBg(Canvas canvas, Size size) {
-    Paint mBgPaint = Paint();
-    Gradient mBgGradient = LinearGradient(
+    final mBgPaint = Paint();
+    final mBgGradient = LinearGradient(
       begin: Alignment.bottomCenter,
       end: Alignment.topCenter,
       colors: bgColor ?? [Color(0xff18191d), Color(0xff18191d)],
     );
+
     if (mMainRect != null) {
-      Rect mainRect =
-          Rect.fromLTRB(0, 0, mMainRect.width, mMainRect.height + mTopPadding);
+      final mainRect = Rect.fromLTRB(
+        0,
+        0,
+        mMainRect.width,
+        mMainRect.height + mTopPadding,
+      );
+
       canvas.drawRect(
-          mainRect, mBgPaint..shader = mBgGradient.createShader(mainRect));
+        mainRect,
+        mBgPaint..shader = mBgGradient.createShader(mainRect),
+      );
     }
 
-    if (mVolRect != null) {
-      Rect volRect = Rect.fromLTRB(
-          0, mVolRect.top - mChildPadding, mVolRect.width, mVolRect.bottom);
-      canvas.drawRect(
-          volRect, mBgPaint..shader = mBgGradient.createShader(volRect));
-    }
+    final dateRect = Rect.fromLTRB(
+      0,
+      size.height - mBottomPadding,
+      size.width,
+      size.height,
+    );
 
-    if (mSecondaryRect != null) {
-      Rect secondaryRect = Rect.fromLTRB(0, mSecondaryRect.top - mChildPadding,
-          mSecondaryRect.width, mSecondaryRect.bottom);
-      canvas.drawRect(secondaryRect,
-          mBgPaint..shader = mBgGradient.createShader(secondaryRect));
-    }
-    Rect dateRect =
-        Rect.fromLTRB(0, size.height - mBottomPadding, size.width, size.height);
     canvas.drawRect(
-        dateRect, mBgPaint..shader = mBgGradient.createShader(dateRect));
+      dateRect,
+      mBgPaint..shader = mBgGradient.createShader(dateRect),
+    );
   }
 
   @override
   void drawGrid(canvas) {
     mMainRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
-    mVolRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
-    mSecondaryRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
   }
 
   @override
@@ -150,9 +134,6 @@ class ChartPainter extends BaseChartPainter {
       double lastX = i == 0 ? curX : getX(i - 1);
 
       mMainRenderer?.drawChart(lastPoint, curPoint, lastX, curX, size, canvas);
-      mVolRenderer?.drawChart(lastPoint, curPoint, lastX, curX, size, canvas);
-      mSecondaryRenderer?.drawChart(
-          lastPoint, curPoint, lastX, curX, size, canvas);
     }
 
     if (isLongPress == true) drawCrossLine(canvas, size);
@@ -163,8 +144,6 @@ class ChartPainter extends BaseChartPainter {
   void drawRightText(canvas) {
     var textStyle = getTextStyle(this.chartColors.defaultTextColor);
     mMainRenderer?.drawRightText(canvas, textStyle, mGridRows);
-    mVolRenderer?.drawRightText(canvas, textStyle, mGridRows);
-    mSecondaryRenderer?.drawRightText(canvas, textStyle, mGridRows);
   }
 
   @override
@@ -274,8 +253,6 @@ class ChartPainter extends BaseChartPainter {
     }
     //松开显示最后一条数据
     mMainRenderer?.drawText(canvas, data, x);
-    mVolRenderer?.drawText(canvas, data, x);
-    mSecondaryRenderer?.drawText(canvas, data, x);
   }
 
   @override
@@ -311,17 +288,19 @@ class ChartPainter extends BaseChartPainter {
   @override
   void drawNowPrice(Canvas canvas) {
     if (isLine == true) return;
-    double x = translateXtoX(getX(datas.length -1));
-    double value = datas[datas.length -1].close;
+    double x = translateXtoX(getX(datas.length - 1));
+    double value = datas[datas.length - 1].close;
     double y = getMainY(value);
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "------ " + value.toStringAsFixed(fixedLength), this.chartColors.nowPriceColor);
+          "------ " + value.toStringAsFixed(fixedLength),
+          this.chartColors.nowPriceColor);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          value.toStringAsFixed(fixedLength) + " ------", this.chartColors.nowPriceColor);
+          value.toStringAsFixed(fixedLength) + " ------",
+          this.chartColors.nowPriceColor);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }
@@ -364,9 +343,4 @@ class ChartPainter extends BaseChartPainter {
       dateFormat(DateTime.fromMillisecondsSinceEpoch(date), mFormats);
 
   double getMainY(double y) => mMainRenderer?.getY(y) ?? 0.0;
-
-  /// 点是否在SecondaryRect中
-  bool isInSecondaryRect(Offset point) {
-    return mSecondaryRect?.contains(point) ?? false;
-  }
 }

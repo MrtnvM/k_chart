@@ -12,8 +12,8 @@ enum MainState { MA, BOLL, NONE }
 enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
 
 class TimeFormat {
-  static const List<String> YEAR_MONTH_DAY = [yyyy, '-', mm, '-', dd];
-  static const List<String> YEAR_MONTH_DAY_WITH_HOUR = [
+  static const YEAR_MONTH_DAY = [yyyy, '-', mm, '-', dd];
+  static const YEAR_MONTH_DAY_WITH_HOUR = [
     yyyy,
     '-',
     mm,
@@ -28,14 +28,9 @@ class TimeFormat {
 
 class KChartWidget extends StatefulWidget {
   final List<KLineEntity> datas;
-  final MainState mainState;
-  final bool volHidden;
-  final SecondaryState secondaryState;
-  final Function() onSecondaryTap;
   final bool isLine;
   final bool isChinese;
   final List<String> timeFormat;
-  //当屏幕滚动到尽头会调用，真为拉到屏幕右侧尽头，假为拉到屏幕左侧尽头
   final Function(bool) onLoadMore;
   final List<Color> bgColor;
   final int fixedLength;
@@ -51,10 +46,6 @@ class KChartWidget extends StatefulWidget {
     this.datas,
     this.chartStyle,
     this.chartColors, {
-    this.mainState = MainState.MA,
-    this.secondaryState = SecondaryState.MACD,
-    this.onSecondaryTap,
-    this.volHidden = false,
     this.isLine,
     this.isChinese = true,
     this.timeFormat = TimeFormat.YEAR_MONTH_DAY,
@@ -65,7 +56,7 @@ class KChartWidget extends StatefulWidget {
     this.flingTime = 600,
     this.flingRatio = 0.5,
     this.flingCurve = Curves.decelerate,
-    this.isOnDrag
+    this.isOnDrag,
   }) : assert(maDayList != null);
 
   @override
@@ -112,29 +103,23 @@ class _KChartWidgetState extends State<KChartWidget>
       mScrollX = mSelectX = 0.0;
       mScaleX = 1.0;
     }
+
     final _painter = ChartPainter(
-        widget.chartStyle,
-        widget.chartColors,
-        datas: widget.datas,
-        scaleX: mScaleX,
-        scrollX: mScrollX,
-        selectX: mSelectX,
-        isLongPass: isLongPress,
-        mainState: widget.mainState,
-        volHidden: widget.volHidden,
-        secondaryState: widget.secondaryState,
-        isLine: widget.isLine,
-        sink: mInfoWindowStream?.sink,
-        bgColor: widget.bgColor,
-        fixedLength: widget.fixedLength,
-        maDayList: widget.maDayList,
+      widget.chartStyle,
+      widget.chartColors,
+      datas: widget.datas,
+      scaleX: mScaleX,
+      scrollX: mScrollX,
+      selectX: mSelectX,
+      isLongPass: isLongPress,
+      isLine: widget.isLine,
+      sink: mInfoWindowStream?.sink,
+      bgColor: widget.bgColor,
+      fixedLength: widget.fixedLength,
+      maDayList: widget.maDayList,
     );
+
     return GestureDetector(
-      onTapUp: (details) {
-        if(widget.onSecondaryTap != null && _painter.isInSecondaryRect(details.localPosition)) {
-          widget.onSecondaryTap();
-        }
-      },
       onHorizontalDragDown: (details) {
         _stopAnimation();
         _onDragChanged(true);
@@ -211,11 +196,18 @@ class _KChartWidgetState extends State<KChartWidget>
 
   void _onFling(double x) {
     _controller = AnimationController(
-        duration: Duration(milliseconds: widget.flingTime), vsync: this);
+      duration: Duration(milliseconds: widget.flingTime),
+      vsync: this,
+    );
+
     aniX = null;
-    aniX = Tween<double>(begin: mScrollX, end: x * widget.flingRatio + mScrollX)
-        .animate(
-            CurvedAnimation(parent: _controller, curve: widget.flingCurve));
+    aniX = Tween<double>(
+      begin: mScrollX,
+      end: x * widget.flingRatio + mScrollX,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: widget.flingCurve),
+    );
+
     aniX.addListener(() {
       mScrollX = aniX.value;
       if (mScrollX <= 0) {
@@ -233,6 +225,7 @@ class _KChartWidgetState extends State<KChartWidget>
       }
       notifyChanged();
     });
+
     aniX.addStatusListener((status) {
       if (status == AnimationStatus.completed ||
           status == AnimationStatus.dismissed) {
@@ -240,6 +233,7 @@ class _KChartWidgetState extends State<KChartWidget>
         notifyChanged();
       }
     });
+
     _controller.forward();
   }
 
@@ -255,6 +249,7 @@ class _KChartWidgetState extends State<KChartWidget>
     "涨跌幅",
     "成交额"
   ];
+
   final List<String> infoNamesEN = [
     "Date",
     "Open",
@@ -265,67 +260,87 @@ class _KChartWidgetState extends State<KChartWidget>
     "Change%",
     "Amount"
   ];
+
   List<String> infos;
 
   Widget _buildInfoDialog() {
     return StreamBuilder<InfoWindowEntity>(
-        stream: mInfoWindowStream?.stream,
-        builder: (context, snapshot) {
-          if (!isLongPress ||
-              widget.isLine == true ||
-              !snapshot.hasData ||
-              snapshot.data.kLineEntity == null) return Container();
-          KLineEntity entity = snapshot.data.kLineEntity;
-          double upDown = entity.change ?? entity.close - entity.open;
-          double upDownPercent = entity.ratio ?? (upDown / entity.open) * 100;
-          infos = [
-            getDate(entity.time),
-            entity.open.toStringAsFixed(widget.fixedLength),
-            entity.high.toStringAsFixed(widget.fixedLength),
-            entity.low.toStringAsFixed(widget.fixedLength),
-            entity.close.toStringAsFixed(widget.fixedLength),
-            "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
-            "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
-            entity.amount.toInt().toString()
-          ];
-          return Container(
-            margin: EdgeInsets.only(
-                left: snapshot.data.isLeft ? 4 : mWidth - mWidth / 3 - 4,
-                top: 25),
-            width: mWidth / 3,
-            decoration: BoxDecoration(
-                color: widget.chartColors.selectFillColor,
-                border: Border.all(
-                    color: widget.chartColors.selectBorderColor, width: 0.5)),
-            child: ListView.builder(
-              padding: EdgeInsets.all(4),
-              itemCount: infoNamesCN.length,
-              itemExtent: 14.0,
-              shrinkWrap: true,
-              itemBuilder: (context, index) {
-                return _buildItem(infos[index],
-                    widget.isChinese ? infoNamesCN[index] : infoNamesEN[index]);
-              },
+      stream: mInfoWindowStream?.stream,
+      builder: (context, snapshot) {
+        if (!isLongPress ||
+            widget.isLine == true ||
+            !snapshot.hasData ||
+            snapshot.data.kLineEntity == null) {
+          return Container();
+        }
+
+        KLineEntity entity = snapshot.data.kLineEntity;
+        double upDown = entity.change ?? entity.close - entity.open;
+        double upDownPercent = entity.ratio ?? (upDown / entity.open) * 100;
+        infos = [
+          getDate(entity.time),
+          entity.open.toStringAsFixed(widget.fixedLength),
+          entity.high.toStringAsFixed(widget.fixedLength),
+          entity.low.toStringAsFixed(widget.fixedLength),
+          entity.close.toStringAsFixed(widget.fixedLength),
+          "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
+          "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
+          entity.amount.toInt().toString(),
+        ];
+
+        return Container(
+          margin: EdgeInsets.only(
+            left: snapshot.data.isLeft ? 4 : mWidth - mWidth / 3 - 4,
+            top: 25,
+          ),
+          width: mWidth / 3,
+          decoration: BoxDecoration(
+            color: widget.chartColors.selectFillColor,
+            border: Border.all(
+              color: widget.chartColors.selectBorderColor,
+              width: 0.5,
             ),
-          );
-        });
+          ),
+          child: ListView.builder(
+            padding: EdgeInsets.all(4),
+            itemCount: infoNamesCN.length,
+            itemExtent: 14.0,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              return _buildItem(
+                infos[index],
+                widget.isChinese ? infoNamesCN[index] : infoNamesEN[index],
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildItem(String info, String infoName) {
     Color color = Colors.white;
+
     if (info.startsWith("+"))
       color = Colors.green;
     else if (info.startsWith("-"))
       color = Colors.red;
     else
       color = Colors.white;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Expanded(
-            child: Text("$infoName",
-                style: const TextStyle(color: Colors.white, fontSize: 10.0))),
+          child: Text(
+            "$infoName",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10.0,
+            ),
+          ),
+        ),
         Text(info, style: TextStyle(color: color, fontSize: 10.0)),
       ],
     );
