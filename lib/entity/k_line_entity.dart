@@ -5,35 +5,40 @@ class KLineEntity implements CandleEntity {
   final double high;
   final double low;
   final double close;
-  final double amount;
-  final double change;
-  final double ratio;
-  final int time;
+  final double? amount;
+  final double? change;
+  final double? ratio;
+  final int? time;
 
   KLineEntity.fromCustom({
     this.amount,
-    this.open,
-    this.close,
+    required this.open,
+    required this.close,
     this.change,
     this.ratio,
     this.time,
-    this.high,
-    this.low,
+    required this.high,
+    required this.low,
   });
 
   static KLineEntity fromJson(Map<String, dynamic> json) {
-    final open = (json['open'] as num)?.toDouble();
-    final high = (json['high'] as num)?.toDouble();
-    final low = (json['low'] as num)?.toDouble();
-    final close = (json['close'] as num)?.toDouble();
-    final amount = (json['amount'] as num)?.toDouble();
-    final ratio = (json['ratio'] as num)?.toDouble();
-    final change = (json['change'] as num)?.toDouble();
+    final open = (json['open'] as num?)?.toDouble();
+    final high = (json['high'] as num?)?.toDouble();
+    final low = (json['low'] as num?)?.toDouble();
+    final close = (json['close'] as num?)?.toDouble();
+    final amount = (json['amount'] as num?)?.toDouble();
+    final ratio = (json['ratio'] as num?)?.toDouble();
+    final change = (json['change'] as num?)?.toDouble();
 
-    final parsedTime = (json['time'] as num)?.toInt();
+    final parsedTime = (json['time'] as num?)?.toInt();
     final time = parsedTime ??
         // Need only for example project test API
         (json['id'] as num).toInt() * 1000;
+
+    if (open == null) throw Exception('KLineEntity: open should not be null');
+    if (high == null) throw Exception('KLineEntity: high should not be null');
+    if (close == null) throw Exception('KLineEntity: close should not be null');
+    if (low == null) throw Exception('KLineEntity: low should not be null');
 
     return KLineEntity.fromCustom(
       open: open,

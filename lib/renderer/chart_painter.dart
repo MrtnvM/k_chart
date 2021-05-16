@@ -13,28 +13,27 @@ import 'main_renderer.dart';
 class ChartPainter extends BaseChartPainter {
   static get maxScrollX => BaseChartPainter.maxScrollX;
 
-  BaseChartRenderer mMainRenderer;
-  StreamSink<InfoWindowEntity> sink;
-  List<Color> bgColor;
-  int fixedLength;
-  List<int> maDayList;
   final ChartColors chartColors;
-  Paint selectPointPaint, selectorBorderPaint;
   final ChartStyle chartStyle;
+
+  BaseChartRenderer? mMainRenderer;
+  StreamSink<InfoWindowEntity?>? sink;
+  List<Color>? bgColor;
+  int? fixedLength;
+  late Paint selectPointPaint, selectorBorderPaint;
 
   ChartPainter(
     this.chartStyle,
     this.chartColors, {
-    @required datas,
-    @required scaleX,
-    @required scrollX,
-    @required isLongPass,
-    @required selectX,
+    required List<KLineEntity> datas,
+    required double scaleX,
+    required double scrollX,
+    required bool isLongPass,
+    required double selectX,
     this.sink,
-    bool isLine,
+    required bool isLine,
     this.bgColor,
     this.fixedLength,
-    this.maDayList,
   })  : assert(bgColor == null || bgColor.length >= 2),
         super(
           chartStyle,
@@ -49,6 +48,7 @@ class ChartPainter extends BaseChartPainter {
       ..isAntiAlias = true
       ..strokeWidth = 0.5
       ..color = this.chartColors.selectFillColor;
+
     selectorBorderPaint = Paint()
       ..isAntiAlias = true
       ..strokeWidth = 0.5
@@ -59,7 +59,7 @@ class ChartPainter extends BaseChartPainter {
   @override
   void initChartRenderer() {
     if (fixedLength == null) {
-      if (datas == null || datas.isEmpty) {
+      if (datas.isEmpty) {
         fixedLength = 2;
       } else {
         var t = datas[0];
@@ -67,16 +67,16 @@ class ChartPainter extends BaseChartPainter {
             NumberUtil.getMaxDecimalLength(t.open, t.close, t.high, t.low);
       }
     }
+
     mMainRenderer ??= MainRenderer(
       mMainRect,
       mMainMaxValue,
       mMainMinValue,
       mTopPadding,
       isLine,
-      fixedLength,
+      fixedLength!,
       this.chartStyle,
       this.chartColors,
-      maDayList,
     );
   }
 
@@ -89,19 +89,17 @@ class ChartPainter extends BaseChartPainter {
       colors: bgColor ?? [Color(0xff18191d), Color(0xff18191d)],
     );
 
-    if (mMainRect != null) {
-      final mainRect = Rect.fromLTRB(
-        0,
-        0,
-        mMainRect.width,
-        mMainRect.height + mTopPadding,
-      );
+    final mainRect = Rect.fromLTRB(
+      0,
+      0,
+      mMainRect.width,
+      mMainRect.height + mTopPadding,
+    );
 
-      canvas.drawRect(
-        mainRect,
-        mBgPaint..shader = mBgGradient.createShader(mainRect),
-      );
-    }
+    canvas.drawRect(
+      mainRect,
+      mBgPaint..shader = mBgGradient.createShader(mainRect),
+    );
 
     final dateRect = Rect.fromLTRB(
       0,
@@ -126,9 +124,8 @@ class ChartPainter extends BaseChartPainter {
     canvas.save();
     canvas.translate(mTranslateX * scaleX, 0.0);
     canvas.scale(scaleX, 1.0);
-    for (int i = mStartIndex; datas != null && i <= mStopIndex; i++) {
+    for (int i = mStartIndex; i <= mStopIndex; i++) {
       KLineEntity curPoint = datas[i];
-      if (curPoint == null) continue;
       KLineEntity lastPoint = i == 0 ? curPoint : datas[i - 1];
       double curX = getX(i);
       double lastX = i == 0 ? curX : getX(i - 1);
@@ -156,8 +153,7 @@ class ChartPainter extends BaseChartPainter {
       double translateX = xToTranslateX(columnSpace * i);
       if (translateX >= startX && translateX <= stopX) {
         int index = indexOfTranslateX(translateX);
-        if (datas[index] == null) continue;
-        TextPainter tp = getTextPainter(getDate(datas[index].time), null);
+        TextPainter tp = getTextPainter(getDate(datas[index].time!), null);
         y = size.height - (mBottomPadding - tp.height) / 2 - tp.height;
         tp.paint(canvas, Offset(columnSpace * i - tp.width / 2, y));
       }
@@ -178,7 +174,7 @@ class ChartPainter extends BaseChartPainter {
   @override
   void drawCrossLineText(Canvas canvas, Size size) {
     var index = calculateSelectedX(selectX);
-    KLineEntity point = getItem(index);
+    KLineEntity point = getItem(index) as KLineEntity;
 
     TextPainter tp = getTextPainter(point.close, Colors.white);
     double textHeight = tp.height;
@@ -193,32 +189,36 @@ class ChartPainter extends BaseChartPainter {
     if (translateXtoX(getX(index)) < mWidth / 2) {
       isLeft = false;
       x = 1;
-      Path path = new Path();
+      final path = Path();
       path.moveTo(x, y - r);
       path.lineTo(x, y + r);
       path.lineTo(textWidth + 2 * w1, y + r);
       path.lineTo(textWidth + 2 * w1 + w2, y);
       path.lineTo(textWidth + 2 * w1, y - r);
       path.close();
+
       canvas.drawPath(path, selectPointPaint);
       canvas.drawPath(path, selectorBorderPaint);
+
       tp.paint(canvas, Offset(x + w1, y - textHeight / 2));
     } else {
       isLeft = true;
       x = mWidth - textWidth - 1 - 2 * w1 - w2;
-      Path path = new Path();
+      final path = Path();
       path.moveTo(x, y);
       path.lineTo(x + w2, y + r);
       path.lineTo(mWidth - 2, y + r);
       path.lineTo(mWidth - 2, y - r);
       path.lineTo(x + w2, y - r);
       path.close();
+
       canvas.drawPath(path, selectPointPaint);
       canvas.drawPath(path, selectorBorderPaint);
+
       tp.paint(canvas, Offset(x + w1 + w2, y - textHeight / 2));
     }
 
-    TextPainter dateTp = getTextPainter(getDate(point.time), Colors.white);
+    TextPainter dateTp = getTextPainter(getDate(point.time!), Colors.white);
     textWidth = dateTp.width;
     r = textHeight / 2;
     x = translateXtoX(getX(index));
@@ -249,7 +249,7 @@ class ChartPainter extends BaseChartPainter {
     //长按显示按中的数据
     if (isLongPress) {
       var index = calculateSelectedX(selectX);
-      data = getItem(index);
+      data = getItem(index) as KLineEntity;
     }
     //松开显示最后一条数据
     mMainRenderer?.drawText(canvas, data, x);
@@ -264,11 +264,11 @@ class ChartPainter extends BaseChartPainter {
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "── " + mMainLowMinValue.toStringAsFixed(fixedLength), Colors.white);
+          "── " + mMainLowMinValue.toStringAsFixed(fixedLength!), Colors.white);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          mMainLowMinValue.toStringAsFixed(fixedLength) + " ──", Colors.white);
+          mMainLowMinValue.toStringAsFixed(fixedLength!) + " ──", Colors.white);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
     x = translateXtoX(getX(mMainMaxIndex));
@@ -276,11 +276,13 @@ class ChartPainter extends BaseChartPainter {
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "── " + mMainHighMaxValue.toStringAsFixed(fixedLength), Colors.white);
+          "── " + mMainHighMaxValue.toStringAsFixed(fixedLength!),
+          Colors.white);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          mMainHighMaxValue.toStringAsFixed(fixedLength) + " ──", Colors.white);
+          mMainHighMaxValue.toStringAsFixed(fixedLength!) + " ──",
+          Colors.white);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }
@@ -294,12 +296,12 @@ class ChartPainter extends BaseChartPainter {
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "------ " + value.toStringAsFixed(fixedLength),
+          "------ " + value.toStringAsFixed(fixedLength!),
           this.chartColors.nowPriceColor);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          value.toStringAsFixed(fixedLength) + " ------",
+          value.toStringAsFixed(fixedLength!) + " ------",
           this.chartColors.nowPriceColor);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
@@ -308,7 +310,7 @@ class ChartPainter extends BaseChartPainter {
   ///画交叉线
   void drawCrossLine(Canvas canvas, Size size) {
     var index = calculateSelectedX(selectX);
-    KLineEntity point = getItem(index);
+    KLineEntity point = getItem(index) as KLineEntity;
     Paint paintY = Paint()
       ..color = Colors.white12
       ..strokeWidth = this.chartStyle.vCrossWidth

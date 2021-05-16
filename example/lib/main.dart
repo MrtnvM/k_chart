@@ -56,6 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               Container(
                 height: 450,
+                padding: EdgeInsets.all(16),
                 width: double.infinity,
                 child: KChartWidget(
                   datas,
@@ -83,33 +84,42 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget buildButtons() {
-    return Wrap(
-      alignment: WrapAlignment.spaceEvenly,
-      children: <Widget>[
-        button("Candlestick Chart", onPressed: () => isLine = true),
-        button("Line Chart", onPressed: () => isLine = false),
-        button("Change language", onPressed: () => isChinese = !isChinese),
-        button("Customize UI", onPressed: () {
-          setState(() {
-            chartColors.selectBorderColor = Colors.red;
-            chartColors.selectFillColor = Colors.red;
-            chartColors.lineFillColor = Colors.red;
-            chartColors.kLineColor = Colors.yellow;
-          });
-        }),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        children: <Widget>[
+          button("Candlestick Chart", onPressed: () => isLine = false),
+          button("Line Chart", onPressed: () => isLine = true),
+          button("Change language", onPressed: () => isChinese = !isChinese),
+          button("Customize UI", onPressed: () {
+            setState(() {
+              chartColors.selectBorderColor = Colors.red;
+              chartColors.selectFillColor = Colors.red;
+              chartColors.lineFillColor = Colors.red;
+              chartColors.kLineColor = Colors.yellow;
+            });
+          }),
+        ],
+      ),
     );
   }
 
   Widget button(String text, {VoidCallback onPressed}) {
-    return ElevatedButton(
-      onPressed: () {
-        if (onPressed != null) {
-          onPressed();
-          setState(() {});
-        }
-      },
-      child: Text("$text"),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ElevatedButton(
+        onPressed: () {
+          if (onPressed != null) {
+            onPressed();
+            setState(() {});
+          }
+        },
+        child: SizedBox(
+          width: 130,
+          child: Center(child: Text("$text")),
+        ),
+      ),
     );
   }
 

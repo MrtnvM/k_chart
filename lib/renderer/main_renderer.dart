@@ -3,36 +3,36 @@ import '../entity/candle_entity.dart';
 import 'base_chart_renderer.dart';
 
 class MainRenderer extends BaseChartRenderer<CandleEntity> {
-  double mCandleWidth;
-  double mCandleLineWidth;
-  bool isLine;
-  //绘制的内容区域
-  Rect _contentRect;
+  late double _candleWidth;
+  late double _candleLineWidth;
+  final bool isLine;
+  late Rect _contentRect;
   double _contentPadding = 5.0;
-  List<int> maDayList;
+  List<int>? maDayList;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
-  Paint mLinePaint;
+  late Paint _linePaint;
 
   MainRenderer(
-      Rect mainRect,
-      double maxValue,
-      double minValue,
-      double topPadding,
-      this.isLine,
-      int fixedLength,
-      this.chartStyle,
-      this.chartColors,
-      [this.maDayList = const [5, 10, 20]])
-      : super(
-            chartRect: mainRect,
-            maxValue: maxValue,
-            minValue: minValue,
-            topPadding: topPadding,
-            fixedLength: fixedLength) {
-    mCandleWidth = this.chartStyle.candleWidth;
-    mCandleLineWidth = this.chartStyle.candleLineWidth;
-    mLinePaint = Paint()
+    Rect mainRect,
+    double maxValue,
+    double minValue,
+    double topPadding,
+    this.isLine,
+    int fixedLength,
+    this.chartStyle,
+    this.chartColors, [
+    this.maDayList = const [5, 10, 20],
+  ]) : super(
+          chartRect: mainRect,
+          maxValue: maxValue,
+          minValue: minValue,
+          topPadding: topPadding,
+          fixedLength: fixedLength,
+        ) {
+    _candleWidth = this.chartStyle.candleWidth;
+    _candleLineWidth = this.chartStyle.candleLineWidth;
+    _linePaint = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
@@ -68,8 +68,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     }
   }
 
-  Shader mLineFillShader;
-  Path mLinePath, mLineFillPath;
+  Shader? mLineFillShader;
+  Path? mLinePath, mLineFillPath;
   Paint mLineFillPaint = Paint()
     ..style = PaintingStyle.fill
     ..isAntiAlias = true;
@@ -88,8 +88,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
 //          (lastX + curX) / 2, getY(lastPrice), (lastX + curX) / 2, getY(curPrice), curX, getY(curPrice));
 //    }
     if (lastX == curX) lastX = 0; //起点位置填充
-    mLinePath.moveTo(lastX, getY(lastPrice));
-    mLinePath.cubicTo((lastX + curX) / 2, getY(lastPrice), (lastX + curX) / 2,
+    mLinePath!.moveTo(lastX, getY(lastPrice));
+    mLinePath!.cubicTo((lastX + curX) / 2, getY(lastPrice), (lastX + curX) / 2,
         getY(curPrice), curX, getY(curPrice));
 
 //    //画阴影
@@ -104,18 +104,18 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
 
     mLineFillPath ??= Path();
 
-    mLineFillPath.moveTo(lastX, chartRect.height + chartRect.top);
-    mLineFillPath.lineTo(lastX, getY(lastPrice));
-    mLineFillPath.cubicTo((lastX + curX) / 2, getY(lastPrice),
+    mLineFillPath!.moveTo(lastX, chartRect.height + chartRect.top);
+    mLineFillPath!.lineTo(lastX, getY(lastPrice));
+    mLineFillPath!.cubicTo((lastX + curX) / 2, getY(lastPrice),
         (lastX + curX) / 2, getY(curPrice), curX, getY(curPrice));
-    mLineFillPath.lineTo(curX, chartRect.height + chartRect.top);
-    mLineFillPath.close();
+    mLineFillPath!.lineTo(curX, chartRect.height + chartRect.top);
+    mLineFillPath!.close();
 
-    canvas.drawPath(mLineFillPath, mLineFillPaint);
-    mLineFillPath.reset();
+    canvas.drawPath(mLineFillPath!, mLineFillPaint);
+    mLineFillPath!.reset();
 
-    canvas.drawPath(mLinePath, mLinePaint);
-    mLinePath.reset();
+    canvas.drawPath(mLinePath!, _linePaint);
+    mLinePath!.reset();
   }
 
   void drawCandle(CandleEntity curPoint, Canvas canvas, double curX) {
@@ -123,12 +123,12 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     var low = getY(curPoint.low);
     var open = getY(curPoint.open);
     var close = getY(curPoint.close);
-    double r = mCandleWidth / 2;
-    double lineR = mCandleLineWidth / 2;
+    double r = _candleWidth / 2;
+    double lineR = _candleLineWidth / 2;
     if (open >= close) {
       // 实体高度>= CandleLineWidth
-      if (open - close < mCandleLineWidth) {
-        open = close + mCandleLineWidth;
+      if (open - close < _candleLineWidth) {
+        open = close + _candleLineWidth;
       }
       chartPaint.color = this.chartColors.upCandleColor;
       canvas.drawRect(
@@ -137,8 +137,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
           Rect.fromLTRB(curX - lineR, high, curX + lineR, low), chartPaint);
     } else if (close > open) {
       // 实体高度>= CandleLineWidth
-      if (close - open < mCandleLineWidth) {
-        open = close - mCandleLineWidth;
+      if (close - open < _candleLineWidth) {
+        open = close - _candleLineWidth;
       }
       chartPaint.color = this.chartColors.downCandleColor;
       canvas.drawRect(

@@ -31,14 +31,14 @@ class KChartWidget extends StatefulWidget {
   final bool isLine;
   final bool isChinese;
   final List<String> timeFormat;
-  final Function(bool) onLoadMore;
-  final List<Color> bgColor;
+  final Function(bool)? onLoadMore;
+  final List<Color>? bgColor;
   final int fixedLength;
   final List<int> maDayList;
   final int flingTime;
   final double flingRatio;
   final Curve flingCurve;
-  final Function(bool) isOnDrag;
+  final Function(bool)? isOnDrag;
   final ChartColors chartColors;
   final ChartStyle chartStyle;
 
@@ -46,18 +46,18 @@ class KChartWidget extends StatefulWidget {
     this.datas,
     this.chartStyle,
     this.chartColors, {
-    this.isLine,
+    required this.isLine,
     this.isChinese = true,
     this.timeFormat = TimeFormat.YEAR_MONTH_DAY,
     this.onLoadMore,
     this.bgColor,
-    this.fixedLength,
+    this.fixedLength = 0,
     this.maDayList = const [5, 10, 20],
     this.flingTime = 600,
     this.flingRatio = 0.5,
     this.flingCurve = Curves.decelerate,
     this.isOnDrag,
-  }) : assert(maDayList != null);
+  });
 
   @override
   _KChartWidgetState createState() => _KChartWidgetState();
@@ -66,10 +66,10 @@ class KChartWidget extends StatefulWidget {
 class _KChartWidgetState extends State<KChartWidget>
     with TickerProviderStateMixin {
   double mScaleX = 1.0, mScrollX = 0.0, mSelectX = 0.0;
-  StreamController<InfoWindowEntity> mInfoWindowStream;
+  StreamController<InfoWindowEntity?>? mInfoWindowStream;
   double mWidth = 0;
-  AnimationController _controller;
-  Animation<double> aniX;
+  AnimationController? _controller;
+  Animation<double>? aniX;
 
   double getMinScrollX() {
     return mScaleX;
@@ -81,7 +81,7 @@ class _KChartWidgetState extends State<KChartWidget>
   @override
   void initState() {
     super.initState();
-    mInfoWindowStream = StreamController<InfoWindowEntity>();
+    mInfoWindowStream = StreamController<InfoWindowEntity?>();
   }
 
   @override
@@ -99,7 +99,7 @@ class _KChartWidgetState extends State<KChartWidget>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.datas == null || widget.datas.isEmpty) {
+    if (widget.datas.isEmpty) {
       mScrollX = mSelectX = 0.0;
       mScaleX = 1.0;
     }
@@ -116,70 +116,74 @@ class _KChartWidgetState extends State<KChartWidget>
       sink: mInfoWindowStream?.sink,
       bgColor: widget.bgColor,
       fixedLength: widget.fixedLength,
-      maDayList: widget.maDayList,
     );
 
-    return GestureDetector(
-      onHorizontalDragDown: (details) {
-        _stopAnimation();
-        _onDragChanged(true);
-      },
-      onHorizontalDragUpdate: (details) {
-        if (isScale || isLongPress) return;
-        mScrollX = (details.primaryDelta / mScaleX + mScrollX)
-            .clamp(0.0, ChartPainter.maxScrollX);
-        notifyChanged();
-      },
-      onHorizontalDragEnd: (DragEndDetails details) {
-        var velocity = details.velocity.pixelsPerSecond.dx;
-        _onFling(velocity);
-      },
-      onHorizontalDragCancel: () => _onDragChanged(false),
-      onScaleStart: (_) {
-        isScale = true;
-      },
-      onScaleUpdate: (details) {
-        if (isDrag || isLongPress) return;
-        mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
-        notifyChanged();
-      },
-      onScaleEnd: (_) {
-        isScale = false;
-        _lastScale = mScaleX;
-      },
-      onLongPressStart: (details) {
-        isLongPress = true;
-        if (mSelectX != details.globalPosition.dx) {
-          mSelectX = details.globalPosition.dx;
+    return ClipRRect(
+      child: GestureDetector(
+        onHorizontalDragDown: (details) {
+          _stopAnimation();
+          _onDragChanged(true);
+        },
+        onHorizontalDragUpdate: (details) {
+          if (isScale || isLongPress || details.primaryDelta == null) return;
+
+          mScrollX = (details.primaryDelta! / mScaleX + mScrollX)
+              .clamp(0.0, ChartPainter.maxScrollX) as double;
           notifyChanged();
-        }
-      },
-      onLongPressMoveUpdate: (details) {
-        if (mSelectX != details.globalPosition.dx) {
-          mSelectX = details.globalPosition.dx;
+        },
+        onHorizontalDragEnd: (DragEndDetails details) {
+          var velocity = details.velocity.pixelsPerSecond.dx;
+          _onFling(velocity);
+        },
+        onHorizontalDragCancel: () => _onDragChanged(false),
+        onScaleStart: (_) {
+          isScale = true;
+        },
+        onScaleUpdate: (details) {
+          if (isDrag || isLongPress) return;
+          mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
           notifyChanged();
-        }
-      },
-      onLongPressEnd: (details) {
-        isLongPress = false;
-        mInfoWindowStream?.sink?.add(null);
-        notifyChanged();
-      },
-      child: Stack(
-        children: <Widget>[
-          CustomPaint(
-            size: Size(double.infinity, double.infinity),
-            painter: _painter,
-          ),
-          _buildInfoDialog()
-        ],
+        },
+        onScaleEnd: (_) {
+          isScale = false;
+          _lastScale = mScaleX;
+        },
+        onLongPressStart: (details) {
+          isLongPress = true;
+          if (mSelectX != details.globalPosition.dx) {
+            mSelectX = details.globalPosition.dx;
+            notifyChanged();
+          }
+        },
+        onLongPressMoveUpdate: (details) {
+          if (mSelectX != details.globalPosition.dx) {
+            mSelectX = details.globalPosition.dx;
+            notifyChanged();
+          }
+        },
+        onLongPressEnd: (details) {
+          isLongPress = false;
+          mInfoWindowStream?.sink.add(null);
+          notifyChanged();
+        },
+        child: Stack(
+          children: <Widget>[
+            CustomPaint(
+              size: Size(double.infinity, double.infinity),
+              painter: _painter,
+            ),
+            _buildInfoDialog()
+          ],
+        ),
       ),
     );
   }
 
   void _stopAnimation({bool needNotify = true}) {
-    if (_controller != null && _controller.isAnimating) {
-      _controller.stop();
+    final controller = _controller;
+
+    if (controller != null && controller.isAnimating) {
+      controller.stop();
       _onDragChanged(false);
       if (needNotify) {
         notifyChanged();
@@ -190,43 +194,45 @@ class _KChartWidgetState extends State<KChartWidget>
   void _onDragChanged(bool isOnDrag) {
     isDrag = isOnDrag;
     if (widget.isOnDrag != null) {
-      widget.isOnDrag(isDrag);
+      widget.isOnDrag?.call(isDrag);
     }
   }
 
   void _onFling(double x) {
-    _controller = AnimationController(
+    final controller = AnimationController(
       duration: Duration(milliseconds: widget.flingTime),
       vsync: this,
     );
+
+    _controller = controller;
 
     aniX = null;
     aniX = Tween<double>(
       begin: mScrollX,
       end: x * widget.flingRatio + mScrollX,
     ).animate(
-      CurvedAnimation(parent: _controller, curve: widget.flingCurve),
+      CurvedAnimation(parent: controller, curve: widget.flingCurve),
     );
 
-    aniX.addListener(() {
-      mScrollX = aniX.value;
+    aniX!.addListener(() {
+      mScrollX = aniX!.value;
       if (mScrollX <= 0) {
         mScrollX = 0;
         if (widget.onLoadMore != null) {
-          widget.onLoadMore(true);
+          widget.onLoadMore!(true);
         }
         _stopAnimation();
       } else if (mScrollX >= ChartPainter.maxScrollX) {
         mScrollX = ChartPainter.maxScrollX;
         if (widget.onLoadMore != null) {
-          widget.onLoadMore(false);
+          widget.onLoadMore!(false);
         }
         _stopAnimation();
       }
       notifyChanged();
     });
 
-    aniX.addStatusListener((status) {
+    aniX!.addStatusListener((status) {
       if (status == AnimationStatus.completed ||
           status == AnimationStatus.dismissed) {
         _onDragChanged(false);
@@ -234,7 +240,7 @@ class _KChartWidgetState extends State<KChartWidget>
       }
     });
 
-    _controller.forward();
+    _controller!.forward();
   }
 
   void notifyChanged() => setState(() {});
@@ -261,36 +267,35 @@ class _KChartWidgetState extends State<KChartWidget>
     "Amount"
   ];
 
-  List<String> infos;
+  late List<String> infos;
 
   Widget _buildInfoDialog() {
-    return StreamBuilder<InfoWindowEntity>(
+    return StreamBuilder<InfoWindowEntity?>(
       stream: mInfoWindowStream?.stream,
       builder: (context, snapshot) {
-        if (!isLongPress ||
-            widget.isLine == true ||
-            !snapshot.hasData ||
-            snapshot.data.kLineEntity == null) {
+        if (!isLongPress || widget.isLine == true || !snapshot.hasData) {
           return Container();
         }
 
-        KLineEntity entity = snapshot.data.kLineEntity;
+        KLineEntity entity = snapshot.data!.kLineEntity;
         double upDown = entity.change ?? entity.close - entity.open;
         double upDownPercent = entity.ratio ?? (upDown / entity.open) * 100;
+        final time = entity.time;
+
         infos = [
-          getDate(entity.time),
+          time != null ? getDate(time) : '-',
           entity.open.toStringAsFixed(widget.fixedLength),
           entity.high.toStringAsFixed(widget.fixedLength),
           entity.low.toStringAsFixed(widget.fixedLength),
           entity.close.toStringAsFixed(widget.fixedLength),
           "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
           "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
-          entity.amount.toInt().toString(),
+          entity.amount?.toInt().toString() ?? '-',
         ];
 
         return Container(
           margin: EdgeInsets.only(
-            left: snapshot.data.isLeft ? 4 : mWidth - mWidth / 3 - 4,
+            left: snapshot.data!.isLeft ? 4 : mWidth - mWidth / 3 - 4,
             top: 25,
           ),
           width: mWidth / 3,

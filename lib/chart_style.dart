@@ -15,18 +15,9 @@ class ChartColors {
 }
 
 class ChartStyle {
-  //点与点的距离
   double pointWidth = 11.0;
-
-  //蜡烛宽度
   double candleWidth = 8.5;
-
-  //蜡烛中间线的宽度
   double candleLineWidth = 1.5;
-
-  //垂直交叉线宽度
   double vCrossWidth = 8.5;
-
-  //水平交叉线宽度
   double hCrossWidth = 0.5;
 }

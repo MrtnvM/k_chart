@@ -1,7 +1,5 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:flutter/foundation.dart';
-
 abstract class CandleEntity {
   final double open;
   final double high;
@@ -9,9 +7,9 @@ abstract class CandleEntity {
   final double close;
 
   CandleEntity({
-    @required this.open,
-    @required this.high,
-    @required this.low,
-    @required this.close,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
   });
 }

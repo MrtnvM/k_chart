@@ -1,8 +1,8 @@
 import 'dart:math';
 export 'package:flutter/material.dart'
-    show Color, required, TextStyle, Rect, Canvas, Size, CustomPainter;
+    show Color, TextStyle, Rect, Canvas, Size, CustomPainter;
 import 'package:flutter/material.dart'
-    show Color, required, TextStyle, Rect, Canvas, Size, CustomPainter;
+    show Color, TextStyle, Rect, Canvas, Size, CustomPainter;
 import 'package:k_chart/utils/date_format_util.dart';
 import '../entity/k_line_entity.dart';
 import '../chart_style.dart' show ChartStyle;
@@ -15,8 +15,8 @@ abstract class BaseChartPainter extends CustomPainter {
   final bool isLongPress;
   final bool isLine;
 
-  Rect mMainRect;
-  double mDisplayHeight, mWidth;
+  late Rect mMainRect;
+  late double mDisplayHeight, mWidth;
 
   final double mTopPadding = 30.0, mBottomPadding = 20.0, mChildPadding = 12.0;
   final int mGridRows = 4, mGridColumns = 4;
@@ -30,19 +30,19 @@ abstract class BaseChartPainter extends CustomPainter {
   double mDataLen =
       0.0; //数据占屏幕总长度 (Data occupies the total length of the screen)
   final ChartStyle chartStyle;
-  double mPointWidth;
+  late double mPointWidth;
   List<String> mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];
 
   BaseChartPainter(
     this.chartStyle, {
-    @required this.datas,
-    @required this.selectX,
+    required this.datas,
+    required this.selectX,
     this.isLongPress = false,
     this.isLine = false,
     this.scaleX = 1.0,
     this.scrollX = 0.0,
   }) {
-    mItemCount = datas?.length ?? 0;
+    mItemCount = datas.length;
     mPointWidth = this.chartStyle.pointWidth;
     mDataLen = mItemCount * mPointWidth;
     initFormats();
@@ -51,8 +51,9 @@ abstract class BaseChartPainter extends CustomPainter {
   void initFormats() {
 //    [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn]
     if (mItemCount < 2) return;
-    int firstTime = datas.first?.time ?? 0;
-    int secondTime = datas[1]?.time ?? 0;
+
+    int firstTime = datas.first.time ?? 0;
+    int secondTime = datas[1].time ?? 0;
     int time = secondTime - firstTime;
     time ~/= 1000;
     //月线
@@ -78,15 +79,17 @@ abstract class BaseChartPainter extends CustomPainter {
     canvas.scale(1, 1);
     drawBg(canvas, size);
     drawGrid(canvas);
-    if (datas != null && datas.isNotEmpty) {
+
+    if (datas.isNotEmpty) {
       drawChart(canvas, size);
       drawRightText(canvas);
       drawDate(canvas, size);
       if (isLongPress == true) drawCrossLineText(canvas, size);
-      drawText(canvas, datas?.last, 5);
+      drawText(canvas, datas.last, 5);
       drawMaxAndMin(canvas);
       drawNowPrice(canvas);
     }
+
     canvas.restore();
   }
 
@@ -131,7 +134,8 @@ abstract class BaseChartPainter extends CustomPainter {
   }
 
   calculateValue() {
-    if (datas == null || datas.isEmpty) return;
+    if (datas.isEmpty) return;
+
     maxScrollX = getMinTranslateX().abs();
     setTranslateXFromScrollX(scrollX);
     mStartIndex = indexOfTranslateX(xToTranslateX(0));
@@ -201,11 +205,7 @@ abstract class BaseChartPainter extends CustomPainter {
   double getX(int position) => position * mPointWidth + mPointWidth / 2;
 
   Object getItem(int position) {
-    if (datas != null) {
-      return datas[position];
-    } else {
-      return null;
-    }
+    return datas[position];
   }
 
   ///scrollX 转换为 TranslateX
