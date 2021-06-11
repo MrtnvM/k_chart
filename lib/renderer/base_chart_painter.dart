@@ -43,7 +43,7 @@ abstract class BaseChartPainter extends CustomPainter {
   }) {
     mItemCount = datas.length;
     mPointWidth = this.chartStyle.pointWidth;
-    mDataLen = mItemCount * mPointWidth;
+    mDataLen = mItemCount * mPointWidth + (isLine ? 0.0 : 40.0);
     initFormats();
   }
 
