@@ -260,13 +260,13 @@ class ChartPainter extends BaseChartPainter {
       //画右边
       final tp = getTextPainter(
         "── " + priceFormatter(mMainLowMinValue),
-        Colors.white,
+        chartColors.downCandleColor,
       );
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       final tp = getTextPainter(
         priceFormatter(mMainLowMinValue) + " ──",
-        Colors.white,
+        chartColors.downCandleColor,
       );
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
@@ -276,14 +276,14 @@ class ChartPainter extends BaseChartPainter {
       //画右边
       final tp = getTextPainter(
         "── " + priceFormatter(mMainHighMaxValue),
-        Colors.white,
+        chartColors.upCandleColor,
       );
 
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       final tp = getTextPainter(
         priceFormatter(mMainHighMaxValue) + " ──",
-        Colors.white,
+        chartColors.upCandleColor,
       );
 
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
