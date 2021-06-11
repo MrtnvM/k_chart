@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:k_chart/k_chart_widget.dart';
 import '../entity/candle_entity.dart';
 import 'base_chart_renderer.dart';
 
@@ -19,33 +20,38 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     double minValue,
     double topPadding,
     this.isLine,
-    int fixedLength,
     this.chartStyle,
-    this.chartColors, [
+    this.chartColors,
+    PriceFormatter priceFormatter, [
     this.maDayList = const [5, 10, 20],
   ]) : super(
           chartRect: mainRect,
           maxValue: maxValue,
           minValue: minValue,
           topPadding: topPadding,
-          fixedLength: fixedLength,
+          priceFormatter: priceFormatter,
+          chartColors: chartColors,
         ) {
     _candleWidth = this.chartStyle.candleWidth;
     _candleLineWidth = this.chartStyle.candleLineWidth;
+
     _linePaint = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
       ..color = this.chartColors.kLineColor;
+
     _contentRect = Rect.fromLTRB(
         chartRect.left,
         chartRect.top + _contentPadding,
         chartRect.right,
         chartRect.bottom - _contentPadding);
+
     if (maxValue == minValue) {
       maxValue *= 1.5;
       minValue /= 2;
     }
+
     scaleY = _contentRect.height / (maxValue - minValue);
   }
 
@@ -149,37 +155,53 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   }
 
   @override
-  void drawRightText(canvas, textStyle, int gridRows) {
+  void drawRightText(canvas, TextStyle textStyle, int gridRows) {
     double rowSpace = chartRect.height / gridRows;
+
     for (var i = 0; i <= gridRows; ++i) {
-      double value = (gridRows - i) * rowSpace / scaleY + minValue;
-      TextSpan span = TextSpan(text: "${format(value)}", style: textStyle);
-      TextPainter tp =
-          TextPainter(text: span, textDirection: TextDirection.ltr);
+      final value = (gridRows - i) * rowSpace / scaleY + minValue;
+      final span = TextSpan(
+        text: "${priceFormatter(value)}",
+        style: textStyle.copyWith(
+          backgroundColor: chartColors.yAxisLabelBackground,
+        ),
+      );
+      final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+
       tp.layout();
       if (i == 0) {
         tp.paint(canvas, Offset(chartRect.width - tp.width, topPadding));
       } else {
         tp.paint(
-            canvas,
-            Offset(chartRect.width - tp.width,
-                rowSpace * i - tp.height + topPadding));
+          canvas,
+          Offset(
+            chartRect.width - tp.width,
+            rowSpace * i - tp.height + topPadding,
+          ),
+        );
       }
     }
   }
 
   @override
   void drawGrid(Canvas canvas, int gridRows, int gridColumns) {
-//    final int gridRows = 4, gridColumns = 4;
     double rowSpace = chartRect.height / gridRows;
+
     for (int i = 0; i <= gridRows; i++) {
-      canvas.drawLine(Offset(0, rowSpace * i + topPadding),
-          Offset(chartRect.width, rowSpace * i + topPadding), gridPaint);
+      canvas.drawLine(
+        Offset(0, rowSpace * i + topPadding),
+        Offset(chartRect.width, rowSpace * i + topPadding),
+        gridPaint,
+      );
     }
+
     double columnSpace = chartRect.width / gridColumns;
     for (int i = 0; i <= columnSpace; i++) {
-      canvas.drawLine(Offset(columnSpace * i, topPadding / 3),
-          Offset(columnSpace * i, chartRect.bottom), gridPaint);
+      canvas.drawLine(
+        Offset(columnSpace * i, topPadding / 3),
+        Offset(columnSpace * i, chartRect.bottom),
+        gridPaint,
+      );
     }
   }
 

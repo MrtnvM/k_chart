@@ -8,8 +8,7 @@ import 'entity/k_line_entity.dart';
 import 'renderer/chart_painter.dart';
 import 'utils/date_format_util.dart';
 
-enum MainState { MA, BOLL, NONE }
-enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
+enum KChartLanguage { russian, english }
 
 class TimeFormat {
   static const YEAR_MONTH_DAY = [yyyy, '-', mm, '-', dd];
@@ -26,14 +25,34 @@ class TimeFormat {
   ];
 }
 
+enum InfoWindowElement {
+  date,
+  open,
+  high,
+  low,
+  close,
+  change,
+  changePercent,
+  amount
+}
+
+const defaultInfoWindowElements = [
+  InfoWindowElement.date,
+  InfoWindowElement.open,
+  InfoWindowElement.high,
+  InfoWindowElement.low,
+  InfoWindowElement.close,
+  InfoWindowElement.changePercent,
+];
+
+typedef PriceFormatter = String Function(double);
+
 class KChartWidget extends StatefulWidget {
   final List<KLineEntity> datas;
   final bool isLine;
-  final bool isChinese;
   final List<String> timeFormat;
   final Function(bool)? onLoadMore;
   final List<Color>? bgColor;
-  final int fixedLength;
   final List<int> maDayList;
   final int flingTime;
   final double flingRatio;
@@ -42,21 +61,30 @@ class KChartWidget extends StatefulWidget {
   final ChartColors chartColors;
   final ChartStyle chartStyle;
 
+  final KChartLanguage language;
+  final List<String> dateFormat;
+  final List<String> infoWindowDateFormat;
+  final List<InfoWindowElement> infoWindowElements;
+  final PriceFormatter priceFormatter;
+
   KChartWidget(
     this.datas,
     this.chartStyle,
     this.chartColors, {
     required this.isLine,
-    this.isChinese = true,
+    required this.priceFormatter,
     this.timeFormat = TimeFormat.YEAR_MONTH_DAY,
     this.onLoadMore,
     this.bgColor,
-    this.fixedLength = 0,
     this.maDayList = const [5, 10, 20],
     this.flingTime = 600,
     this.flingRatio = 0.5,
     this.flingCurve = Curves.decelerate,
     this.isOnDrag,
+    this.dateFormat = TimeFormat.YEAR_MONTH_DAY,
+    this.infoWindowDateFormat = TimeFormat.YEAR_MONTH_DAY,
+    this.infoWindowElements = defaultInfoWindowElements,
+    this.language = KChartLanguage.english,
   });
 
   @override
@@ -65,34 +93,30 @@ class KChartWidget extends StatefulWidget {
 
 class _KChartWidgetState extends State<KChartWidget>
     with TickerProviderStateMixin {
-  double mScaleX = 1.0, mScrollX = 0.0, mSelectX = 0.0;
-  StreamController<InfoWindowEntity?>? mInfoWindowStream;
-  double mWidth = 0;
+  double _scaleX = 1.0, _scrollX = 0.0, _selectX = 0.0;
+  StreamController<InfoWindowEntity?>? _infoWindowStream;
+
   AnimationController? _controller;
   Animation<double>? aniX;
 
+  PriceFormatter get priceFormatter => widget.priceFormatter;
+
   double getMinScrollX() {
-    return mScaleX;
+    return _scaleX;
   }
 
   double _lastScale = 1.0;
-  bool isScale = false, isDrag = false, isLongPress = false;
+  bool _isScale = false, _isDrag = false, _isLongPress = false;
 
   @override
   void initState() {
     super.initState();
-    mInfoWindowStream = StreamController<InfoWindowEntity?>();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    mWidth = MediaQuery.of(context).size.width;
+    _infoWindowStream = StreamController<InfoWindowEntity?>();
   }
 
   @override
   void dispose() {
-    mInfoWindowStream?.close();
+    _infoWindowStream?.close();
     _controller?.dispose();
     super.dispose();
   }
@@ -100,80 +124,86 @@ class _KChartWidgetState extends State<KChartWidget>
   @override
   Widget build(BuildContext context) {
     if (widget.datas.isEmpty) {
-      mScrollX = mSelectX = 0.0;
-      mScaleX = 1.0;
+      _scrollX = _selectX = 0.0;
+      _scaleX = 1.0;
     }
 
     final _painter = ChartPainter(
       widget.chartStyle,
       widget.chartColors,
       datas: widget.datas,
-      scaleX: mScaleX,
-      scrollX: mScrollX,
-      selectX: mSelectX,
-      isLongPass: isLongPress,
+      scaleX: _scaleX,
+      scrollX: _scrollX,
+      selectX: _selectX,
+      isLongPass: _isLongPress,
       isLine: widget.isLine,
-      sink: mInfoWindowStream?.sink,
+      sink: _infoWindowStream?.sink,
       bgColor: widget.bgColor,
-      fixedLength: widget.fixedLength,
+      datetimeFormat: widget.dateFormat,
+      language: widget.language,
+      priceFormatter: widget.priceFormatter,
     );
 
     return ClipRRect(
-      child: GestureDetector(
-        onHorizontalDragDown: (details) {
-          _stopAnimation();
-          _onDragChanged(true);
-        },
-        onHorizontalDragUpdate: (details) {
-          if (isScale || isLongPress || details.primaryDelta == null) return;
+      child: Padding(
+        padding: const EdgeInsets.only(left: 0.5, right: 0.5),
+        child: GestureDetector(
+          onHorizontalDragDown: (details) {
+            _stopAnimation();
+            _onDragChanged(true);
+          },
+          onHorizontalDragUpdate: (details) {
+            final primaryDelta = details.primaryDelta;
+            if (_isScale || _isLongPress || primaryDelta == null) return;
 
-          mScrollX = (details.primaryDelta! / mScaleX + mScrollX)
-              .clamp(0.0, ChartPainter.maxScrollX) as double;
-          notifyChanged();
-        },
-        onHorizontalDragEnd: (DragEndDetails details) {
-          var velocity = details.velocity.pixelsPerSecond.dx;
-          _onFling(velocity);
-        },
-        onHorizontalDragCancel: () => _onDragChanged(false),
-        onScaleStart: (_) {
-          isScale = true;
-        },
-        onScaleUpdate: (details) {
-          if (isDrag || isLongPress) return;
-          mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
-          notifyChanged();
-        },
-        onScaleEnd: (_) {
-          isScale = false;
-          _lastScale = mScaleX;
-        },
-        onLongPressStart: (details) {
-          isLongPress = true;
-          if (mSelectX != details.globalPosition.dx) {
-            mSelectX = details.globalPosition.dx;
+            _scrollX = (primaryDelta / _scaleX + _scrollX)
+                .clamp(0.0, ChartPainter.maxScrollX) as double;
             notifyChanged();
-          }
-        },
-        onLongPressMoveUpdate: (details) {
-          if (mSelectX != details.globalPosition.dx) {
-            mSelectX = details.globalPosition.dx;
+          },
+          onHorizontalDragEnd: (DragEndDetails details) {
+            var velocity = details.velocity.pixelsPerSecond.dx;
+            _onFling(velocity);
+          },
+          onHorizontalDragCancel: () => _onDragChanged(false),
+          onScaleStart: (_) {
+            _isScale = true;
+          },
+          onScaleUpdate: (details) {
+            if (_isDrag || _isLongPress) return;
+            _scaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
             notifyChanged();
-          }
-        },
-        onLongPressEnd: (details) {
-          isLongPress = false;
-          mInfoWindowStream?.sink.add(null);
-          notifyChanged();
-        },
-        child: Stack(
-          children: <Widget>[
-            CustomPaint(
-              size: Size(double.infinity, double.infinity),
-              painter: _painter,
-            ),
-            _buildInfoDialog()
-          ],
+          },
+          onScaleEnd: (_) {
+            _isScale = false;
+            _lastScale = _scaleX;
+          },
+          onLongPressStart: (details) {
+            _isLongPress = true;
+            if (_selectX != details.globalPosition.dx) {
+              _selectX = details.globalPosition.dx;
+              notifyChanged();
+            }
+          },
+          onLongPressMoveUpdate: (details) {
+            if (_selectX != details.globalPosition.dx) {
+              _selectX = details.globalPosition.dx;
+              notifyChanged();
+            }
+          },
+          onLongPressEnd: (details) {
+            _isLongPress = false;
+            _infoWindowStream?.sink.add(null);
+            notifyChanged();
+          },
+          child: Stack(
+            children: <Widget>[
+              CustomPaint(
+                size: Size(double.infinity, double.infinity),
+                painter: _painter,
+              ),
+              _buildInfoDialog()
+            ],
+          ),
         ),
       ),
     );
@@ -192,9 +222,9 @@ class _KChartWidgetState extends State<KChartWidget>
   }
 
   void _onDragChanged(bool isOnDrag) {
-    isDrag = isOnDrag;
+    _isDrag = isOnDrag;
     if (widget.isOnDrag != null) {
-      widget.isOnDrag?.call(isDrag);
+      widget.isOnDrag?.call(_isDrag);
     }
   }
 
@@ -208,22 +238,22 @@ class _KChartWidgetState extends State<KChartWidget>
 
     aniX = null;
     aniX = Tween<double>(
-      begin: mScrollX,
-      end: x * widget.flingRatio + mScrollX,
+      begin: _scrollX,
+      end: x * widget.flingRatio + _scrollX,
     ).animate(
       CurvedAnimation(parent: controller, curve: widget.flingCurve),
     );
 
     aniX!.addListener(() {
-      mScrollX = aniX!.value;
-      if (mScrollX <= 0) {
-        mScrollX = 0;
+      _scrollX = aniX!.value;
+      if (_scrollX <= 0) {
+        _scrollX = 0;
         if (widget.onLoadMore != null) {
           widget.onLoadMore!(true);
         }
         _stopAnimation();
-      } else if (mScrollX >= ChartPainter.maxScrollX) {
-        mScrollX = ChartPainter.maxScrollX;
+      } else if (_scrollX >= ChartPainter.maxScrollX) {
+        _scrollX = ChartPainter.maxScrollX;
         if (widget.onLoadMore != null) {
           widget.onLoadMore!(false);
         }
@@ -245,87 +275,103 @@ class _KChartWidgetState extends State<KChartWidget>
 
   void notifyChanged() => setState(() {});
 
-  final List<String> infoNamesCN = [
-    "时间",
-    "开",
-    "高",
-    "低",
-    "收",
-    "涨跌额",
-    "涨跌幅",
-    "成交额"
-  ];
+  final infoNamesEN = {
+    InfoWindowElement.date: "Date",
+    InfoWindowElement.open: "Open",
+    InfoWindowElement.high: "High",
+    InfoWindowElement.low: "Low",
+    InfoWindowElement.close: "Close",
+    InfoWindowElement.change: "Change",
+    InfoWindowElement.changePercent: "Change %",
+    InfoWindowElement.amount: "Amount"
+  };
 
-  final List<String> infoNamesEN = [
-    "Date",
-    "Open",
-    "High",
-    "Low",
-    "Close",
-    "Change",
-    "Change%",
-    "Amount"
-  ];
+  final infoNamesRU = {
+    InfoWindowElement.date: "Дата",
+    InfoWindowElement.open: "Откр.",
+    InfoWindowElement.high: "Макс.",
+    InfoWindowElement.low: "Мин.",
+    InfoWindowElement.close: "Закр.",
+    InfoWindowElement.change: "Изм.",
+    InfoWindowElement.changePercent: "Изм. %",
+    InfoWindowElement.amount: "Колич."
+  };
 
   late List<String> infos;
 
   Widget _buildInfoDialog() {
     return StreamBuilder<InfoWindowEntity?>(
-      stream: mInfoWindowStream?.stream,
-      builder: (context, snapshot) {
-        if (!isLongPress || widget.isLine == true || !snapshot.hasData) {
-          return Container();
-        }
+      stream: _infoWindowStream?.stream,
+      builder: _buildInfoWindowContent,
+    );
+  }
 
-        KLineEntity entity = snapshot.data!.kLineEntity;
-        double upDown = entity.change ?? entity.close - entity.open;
-        double upDownPercent = entity.ratio ?? (upDown / entity.open) * 100;
-        final time = entity.time;
+  Widget _buildInfoWindowContent(context, snapshot) {
+    if (!_isLongPress ||
+        widget.isLine == true ||
+        !snapshot.hasData ||
+        snapshot.data.kLineEntity == null) return Container();
 
-        infos = [
-          time != null ? getDate(time) : '-',
-          entity.open.toStringAsFixed(widget.fixedLength),
-          entity.high.toStringAsFixed(widget.fixedLength),
-          entity.low.toStringAsFixed(widget.fixedLength),
-          entity.close.toStringAsFixed(widget.fixedLength),
-          "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
+    KLineEntity e = snapshot.data.kLineEntity;
+    double upDown = e.change ?? e.close - e.open;
+    double upDownPercent = e.ratio ?? (upDown / e.open) * 100;
+
+    final infoGrabbers = {
+      InfoWindowElement.date: () => _getInfoWindowDate(e.time),
+      InfoWindowElement.open: () => priceFormatter(e.open),
+      InfoWindowElement.high: () => priceFormatter(e.high),
+      InfoWindowElement.low: () => priceFormatter(e.low),
+      InfoWindowElement.close: () => priceFormatter(e.close),
+      InfoWindowElement.change: () =>
+          "${upDown > 0 ? "+" : ""}${priceFormatter(upDown)}",
+      InfoWindowElement.changePercent: () =>
           "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
-          entity.amount?.toInt().toString() ?? '-',
-        ];
+      InfoWindowElement.amount: () => e.amount?.toInt().toString(),
+    };
 
-        return Container(
-          margin: EdgeInsets.only(
-            left: snapshot.data!.isLeft ? 4 : mWidth - mWidth / 3 - 4,
-            top: 25,
-          ),
-          width: mWidth / 3,
-          decoration: BoxDecoration(
-            color: widget.chartColors.selectFillColor,
-            border: Border.all(
-              color: widget.chartColors.selectBorderColor,
-              width: 0.5,
-            ),
-          ),
-          child: ListView.builder(
-            padding: EdgeInsets.all(4),
-            itemCount: infoNamesCN.length,
-            itemExtent: 14.0,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              return _buildItem(
-                infos[index],
-                widget.isChinese ? infoNamesCN[index] : infoNamesEN[index],
-              );
-            },
-          ),
-        );
-      },
+    final infoNames = {
+      KChartLanguage.english: infoNamesEN,
+      KChartLanguage.russian: infoNamesRU,
+    }[widget.language]!;
+
+    final infos = widget.infoWindowElements //
+        .map((e) => [infoGrabbers[e]?.call(), infoNames[e]])
+        .toList();
+
+    const infoWindowWidth = 148.0;
+
+    final infoWindow = Container(
+      width: infoWindowWidth,
+      decoration: BoxDecoration(
+        color: widget.chartColors.selectFillColor,
+        border: Border.all(
+          color: widget.chartColors.selectBorderColor,
+          width: 0.5,
+        ),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        itemCount: infos.length,
+        shrinkWrap: true,
+        itemBuilder: (_, i) => _buildItem(infos[i][0]!, infos[i][1]!),
+      ),
+    );
+
+    return Stack(
+      children: [
+        Positioned(
+          top: 4,
+          left: snapshot.data.isLeft ? 4 : null,
+          right: !snapshot.data.isLeft ? 4 : null,
+          child: infoWindow,
+        )
+      ],
     );
   }
 
   Widget _buildItem(String info, String infoName) {
     Color color = Colors.white;
-
     if (info.startsWith("+"))
       color = Colors.green;
     else if (info.startsWith("-"))
@@ -333,24 +379,52 @@ class _KChartWidgetState extends State<KChartWidget>
     else
       color = Colors.white;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            "$infoName",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10.0,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              "$infoName",
+              style: const TextStyle(
+                color: Color(0xFF9499A2),
+                fontSize: 12.0,
+              ),
             ),
           ),
-        ),
-        Text(info, style: TextStyle(color: color, fontSize: 10.0)),
-      ],
+          Text(
+            info,
+            style: TextStyle(
+              color: color,
+              fontSize: 12.0,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  String getDate(int date) =>
-      dateFormat(DateTime.fromMillisecondsSinceEpoch(date), widget.timeFormat);
+  String getDate(int date) {
+    return dateFormat(
+      DateTime.fromMillisecondsSinceEpoch(date),
+      widget.dateFormat,
+      widget.language,
+    );
+  }
+
+  String _getInfoWindowDate(int? date) {
+    if (date == null) {
+      return '-';
+    }
+
+    final format = widget.infoWindowDateFormat;
+    return dateFormat(
+      DateTime.fromMillisecondsSinceEpoch(date),
+      format,
+      widget.language,
+    );
+  }
 }

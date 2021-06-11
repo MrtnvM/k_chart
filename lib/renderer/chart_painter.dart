@@ -1,8 +1,8 @@
 import 'dart:async' show StreamSink;
 
 import 'package:flutter/material.dart';
-import 'package:k_chart/utils/number_util.dart';
 import '../entity/k_line_entity.dart';
+import '../k_chart_widget.dart';
 import '../utils/date_format_util.dart';
 import '../entity/info_window_entity.dart';
 
@@ -19,8 +19,11 @@ class ChartPainter extends BaseChartPainter {
   BaseChartRenderer? mMainRenderer;
   StreamSink<InfoWindowEntity?>? sink;
   List<Color>? bgColor;
-  int? fixedLength;
   late Paint selectPointPaint, selectorBorderPaint;
+
+  final List<String> datetimeFormat;
+  final KChartLanguage language;
+  final String Function(double) priceFormatter;
 
   ChartPainter(
     this.chartStyle,
@@ -30,10 +33,12 @@ class ChartPainter extends BaseChartPainter {
     required double scrollX,
     required bool isLongPass,
     required double selectX,
+    required this.datetimeFormat,
+    required this.priceFormatter,
+    required this.language,
     this.sink,
     required bool isLine,
     this.bgColor,
-    this.fixedLength,
   })  : assert(bgColor == null || bgColor.length >= 2),
         super(
           chartStyle,
@@ -47,36 +52,26 @@ class ChartPainter extends BaseChartPainter {
     selectPointPaint = Paint()
       ..isAntiAlias = true
       ..strokeWidth = 0.5
-      ..color = this.chartColors.selectFillColor;
+      ..color = chartColors.selectFillColor;
 
     selectorBorderPaint = Paint()
       ..isAntiAlias = true
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke
-      ..color = this.chartColors.selectBorderColor;
+      ..color = chartColors.selectBorderColor;
   }
 
   @override
   void initChartRenderer() {
-    if (fixedLength == null) {
-      if (datas.isEmpty) {
-        fixedLength = 2;
-      } else {
-        var t = datas[0];
-        fixedLength =
-            NumberUtil.getMaxDecimalLength(t.open, t.close, t.high, t.low);
-      }
-    }
-
     mMainRenderer ??= MainRenderer(
       mMainRect,
       mMainMaxValue,
       mMainMinValue,
       mTopPadding,
       isLine,
-      fixedLength!,
-      this.chartStyle,
-      this.chartColors,
+      chartStyle,
+      chartColors,
+      priceFormatter,
     );
   }
 
@@ -263,26 +258,34 @@ class ChartPainter extends BaseChartPainter {
     double y = getMainY(mMainLowMinValue);
     if (x < mWidth / 2) {
       //画右边
-      TextPainter tp = getTextPainter(
-          "── " + mMainLowMinValue.toStringAsFixed(fixedLength!), Colors.white);
+      final tp = getTextPainter(
+        "── " + priceFormatter(mMainLowMinValue),
+        Colors.white,
+      );
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
-      TextPainter tp = getTextPainter(
-          mMainLowMinValue.toStringAsFixed(fixedLength!) + " ──", Colors.white);
+      final tp = getTextPainter(
+        priceFormatter(mMainLowMinValue) + " ──",
+        Colors.white,
+      );
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
     x = translateXtoX(getX(mMainMaxIndex));
     y = getMainY(mMainHighMaxValue);
     if (x < mWidth / 2) {
       //画右边
-      TextPainter tp = getTextPainter(
-          "── " + mMainHighMaxValue.toStringAsFixed(fixedLength!),
-          Colors.white);
+      final tp = getTextPainter(
+        "── " + priceFormatter(mMainHighMaxValue),
+        Colors.white,
+      );
+
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
-      TextPainter tp = getTextPainter(
-          mMainHighMaxValue.toStringAsFixed(fixedLength!) + " ──",
-          Colors.white);
+      final tp = getTextPainter(
+        priceFormatter(mMainHighMaxValue) + " ──",
+        Colors.white,
+      );
+
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }
@@ -295,14 +298,18 @@ class ChartPainter extends BaseChartPainter {
     double y = getMainY(value);
     if (x < mWidth / 2) {
       //画右边
-      TextPainter tp = getTextPainter(
-          "------ " + value.toStringAsFixed(fixedLength!),
-          this.chartColors.nowPriceColor);
+      final tp = getTextPainter(
+        "------ " + priceFormatter(value),
+        this.chartColors.nowPriceColor,
+      );
+
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
-      TextPainter tp = getTextPainter(
-          value.toStringAsFixed(fixedLength!) + " ------",
-          this.chartColors.nowPriceColor);
+      final tp = getTextPainter(
+        priceFormatter(value) + " ------",
+        this.chartColors.nowPriceColor,
+      );
+
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }
@@ -342,7 +349,7 @@ class ChartPainter extends BaseChartPainter {
   }
 
   String getDate(int date) =>
-      dateFormat(DateTime.fromMillisecondsSinceEpoch(date), mFormats);
+      dateFormat(DateTime.fromMillisecondsSinceEpoch(date), mFormats, language);
 
   double getMainY(double y) => mMainRenderer?.getY(y) ?? 0.0;
 }

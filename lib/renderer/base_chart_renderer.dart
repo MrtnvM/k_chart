@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:k_chart/chart_style.dart';
+import 'package:k_chart/k_chart_widget.dart';
 export '../chart_style.dart';
 
 abstract class BaseChartRenderer<T> {
@@ -6,26 +8,19 @@ abstract class BaseChartRenderer<T> {
   late double scaleY;
   double topPadding;
   Rect chartRect;
-  int fixedLength;
+  PriceFormatter priceFormatter;
+  ChartColors chartColors;
 
-  Paint chartPaint = Paint()
-    ..isAntiAlias = true
-    ..filterQuality = FilterQuality.high
-    ..strokeWidth = 1.0
-    ..color = Colors.red;
-
-  Paint gridPaint = Paint()
-    ..isAntiAlias = true
-    ..filterQuality = FilterQuality.high
-    ..strokeWidth = 0.5
-    ..color = Color(0xff4c5c74);
+  late Paint chartPaint;
+  late Paint gridPaint;
 
   BaseChartRenderer({
     required this.chartRect,
     required this.maxValue,
     required this.minValue,
     required this.topPadding,
-    required this.fixedLength,
+    required this.priceFormatter,
+    required this.chartColors,
   })   : assert(maxValue != 0),
         assert(minValue != 0),
         assert(topPadding != 0) {
@@ -33,24 +28,29 @@ abstract class BaseChartRenderer<T> {
       maxValue *= 1.5;
       minValue /= 2;
     }
+
     scaleY = chartRect.height / (maxValue - minValue);
+
+    gridPaint = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high
+      ..strokeWidth = 0.5
+      ..color = chartColors.gridColor;
+
+    chartPaint = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high
+      ..strokeWidth = 1.0
+      ..color = Colors.red;
   }
 
   double getY(double y) => (maxValue - y) * scaleY + chartRect.top;
-
-  String format(double n) {
-    if (n.isNaN) {
-      return "0.00";
-    } else {
-      return n.toStringAsFixed(fixedLength);
-    }
-  }
 
   void drawGrid(Canvas canvas, int gridRows, int gridColumns);
 
   void drawText(Canvas canvas, T data, double x);
 
-  void drawRightText(canvas, textStyle, int gridRows);
+  void drawRightText(canvas, TextStyle textStyle, int gridRows);
 
   void drawChart(T lastPoint, T curPoint, double lastX, double curX, Size size,
       Canvas canvas);

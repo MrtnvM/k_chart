@@ -18,7 +18,7 @@ abstract class BaseChartPainter extends CustomPainter {
   late Rect mMainRect;
   late double mDisplayHeight, mWidth;
 
-  final double mTopPadding = 30.0, mBottomPadding = 20.0, mChildPadding = 12.0;
+  final double mTopPadding = 1.0, mBottomPadding = 20.0, mChildPadding = 0.0;
   final int mGridRows = 4, mGridColumns = 4;
   int mStartIndex = 0, mStopIndex = 0;
   double mMainMaxValue = double.minPositive, mMainMinValue = double.maxFinite;
@@ -27,8 +27,7 @@ abstract class BaseChartPainter extends CustomPainter {
   double mMainHighMaxValue = double.minPositive,
       mMainLowMinValue = double.maxFinite;
   int mItemCount = 0;
-  double mDataLen =
-      0.0; //数据占屏幕总长度 (Data occupies the total length of the screen)
+  double mDataLen = 0.0; // Data occupies the total length of the screen
   final ChartStyle chartStyle;
   late double mPointWidth;
   List<String> mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];

@@ -31,13 +31,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<KLineEntity> datas;
+  List<KLineEntity> datas = [];
   bool showLoading = true;
   bool isLine = true;
   bool isChinese = true;
 
-  ChartStyle chartStyle = new ChartStyle();
-  ChartColors chartColors = new ChartColors();
+  ChartStyle chartStyle = ChartStyle();
+  ChartColors chartColors = ChartColors();
 
   @override
   void initState() {
@@ -48,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xff17212F),
+      backgroundColor: Colors.white, //Color(0xff17212F),
       appBar: AppBar(title: Text(widget.title)),
       body: ListView(
         children: <Widget>[
@@ -63,9 +63,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   chartStyle,
                   chartColors,
                   isLine: isLine,
-                  fixedLength: 2,
+                  bgColor: [Colors.white, Colors.white],
                   timeFormat: TimeFormat.YEAR_MONTH_DAY,
-                  isChinese: isChinese,
+                  priceFormatter: (value) => '${value.toInt()} ₽',
                 ),
               ),
               if (showLoading)
