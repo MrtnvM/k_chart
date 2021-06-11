@@ -8,7 +8,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   late double _candleLineWidth;
   final bool isLine;
   late Rect _contentRect;
-  double _contentPadding = 5.0;
+  double _contentPadding = 20.0;
   List<int>? maDayList;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
