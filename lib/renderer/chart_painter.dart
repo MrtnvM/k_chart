@@ -144,6 +144,7 @@ class ChartPainter extends BaseChartPainter {
     double startX = getX(mStartIndex) - mPointWidth / 2;
     double stopX = getX(mStopIndex) + mPointWidth / 2;
     double y = 0.0;
+
     for (var i = 0; i <= mGridColumns; ++i) {
       double translateX = xToTranslateX(columnSpace * i);
       if (translateX >= startX && translateX <= stopX) {
@@ -296,20 +297,25 @@ class ChartPainter extends BaseChartPainter {
     double x = translateXtoX(getX(datas.length - 1));
     double value = datas[datas.length - 1].close;
     double y = getMainY(value);
-    if (x < mWidth / 2) {
-      //画右边
-      final tp = getTextPainter(
-        "------ " + priceFormatter(value),
-        this.chartColors.nowPriceColor,
-      );
 
+    final getNowPriceTextSpan = (text) {
+      final color = chartColors.nowPriceColor;
+      final span = TextSpan(
+        text: "$text",
+        style: getTextStyle(color).copyWith(
+          backgroundColor: chartColors.yAxisLabelBackground,
+        ),
+      );
+      final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+      tp.layout();
+      return tp;
+    };
+
+    if (x < mWidth / 2) {
+      final tp = getNowPriceTextSpan("── " + priceFormatter(value));
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
-      final tp = getTextPainter(
-        priceFormatter(value) + " ------",
-        this.chartColors.nowPriceColor,
-      );
-
+      final tp = getNowPriceTextSpan(priceFormatter(value) + " ──");
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }
@@ -318,8 +324,9 @@ class ChartPainter extends BaseChartPainter {
   void drawCrossLine(Canvas canvas, Size size) {
     var index = calculateSelectedX(selectX);
     KLineEntity point = getItem(index) as KLineEntity;
+    final selectionColor = chartColors.selectBorderColor.withAlpha(100);
     Paint paintY = Paint()
-      ..color = Colors.white12
+      ..color = selectionColor
       ..strokeWidth = this.chartStyle.vCrossWidth
       ..isAntiAlias = true;
     double x = getX(index);
@@ -329,7 +336,7 @@ class ChartPainter extends BaseChartPainter {
         Offset(x, size.height - mBottomPadding), paintY);
 
     Paint paintX = Paint()
-      ..color = Colors.white
+      ..color = selectionColor
       ..strokeWidth = this.chartStyle.hCrossWidth
       ..isAntiAlias = true;
     // k线图横线

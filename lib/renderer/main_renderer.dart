@@ -162,9 +162,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       final value = (gridRows - i) * rowSpace / scaleY + minValue;
       final span = TextSpan(
         text: "${priceFormatter(value)}",
-        style: textStyle.copyWith(
-          backgroundColor: chartColors.yAxisLabelBackground,
-        ),
+        style: textStyle,
       );
       final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
 
