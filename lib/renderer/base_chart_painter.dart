@@ -40,7 +40,7 @@ abstract class BaseChartPainter extends CustomPainter {
   }) {
     mItemCount = datas.length;
     mPointWidth = this.chartStyle.pointWidth;
-    mDataLen = mItemCount * mPointWidth + (isLine ? 0.0 : 40.0);
+    mDataLen = mItemCount * mPointWidth + (isLine ? 0.0 : 64.0);
   }
 
   @override
@@ -58,12 +58,12 @@ abstract class BaseChartPainter extends CustomPainter {
 
     if (datas.isNotEmpty) {
       drawChart(canvas, size);
+      drawNowPrice(canvas);
       drawRightText(canvas);
       drawDate(canvas, size);
       if (isLongPress == true) drawCrossLineText(canvas, size);
       drawText(canvas, datas.last, 5);
       drawMaxAndMin(canvas);
-      drawNowPrice(canvas);
     }
 
     canvas.restore();

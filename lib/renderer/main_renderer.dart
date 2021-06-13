@@ -164,7 +164,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       final value = (gridRows - i) * rowSpace / scaleY + minValue;
       final span = TextSpan(
         text: "${priceFormatter(value)}",
-        style: textStyle,
+        style: textStyle.copyWith(
+            backgroundColor: chartColors.yAxisLabelBackground),
       );
       final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
 
@@ -176,7 +177,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
           canvas,
           Offset(
             chartRect.width - tp.width,
-            rowSpace * i - tp.height + topPadding,
+            rowSpace * i - tp.height + topPadding - 2,
           ),
         );
       }

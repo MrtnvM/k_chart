@@ -309,22 +309,15 @@ class ChartPainter extends BaseChartPainter {
       final color = chartColors.nowPriceColor;
       final span = TextSpan(
         text: "$text",
-        style: getTextStyle(color).copyWith(
-          backgroundColor: chartColors.yAxisLabelBackground,
-        ),
+        style: getTextStyle(color),
       );
       final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
       tp.layout();
       return tp;
     };
 
-    if (x < mWidth / 2) {
-      final tp = getNowPriceTextSpan("── " + priceFormatter(value));
-      tp.paint(canvas, Offset(x, y - tp.height / 2));
-    } else {
-      final tp = getNowPriceTextSpan(priceFormatter(value) + " ──");
-      tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
-    }
+    final tp = getNowPriceTextSpan("─ " + priceFormatter(value));
+    tp.paint(canvas, Offset(x, y - tp.height / 2));
   }
 
   ///画交叉线
