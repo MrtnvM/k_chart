@@ -3,7 +3,6 @@ export 'package:flutter/material.dart'
     show Color, TextStyle, Rect, Canvas, Size, CustomPainter;
 import 'package:flutter/material.dart'
     show Color, TextStyle, Rect, Canvas, Size, CustomPainter;
-import 'package:k_chart/utils/date_format_util.dart';
 import '../entity/k_line_entity.dart';
 import '../chart_style.dart' show ChartStyle;
 
@@ -29,7 +28,6 @@ abstract class BaseChartPainter extends CustomPainter {
   double mDataLen = 0.0; // Data occupies the total length of the screen
   final ChartStyle chartStyle;
   late double mPointWidth;
-  List<String> mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];
 
   BaseChartPainter(
     this.chartStyle, {
@@ -43,26 +41,6 @@ abstract class BaseChartPainter extends CustomPainter {
     mItemCount = datas.length;
     mPointWidth = this.chartStyle.pointWidth;
     mDataLen = mItemCount * mPointWidth + (isLine ? 0.0 : 40.0);
-    initFormats();
-  }
-
-  void initFormats() {
-//    [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn]
-    if (mItemCount < 2) return;
-
-    int firstTime = datas.first.time ?? 0;
-    int secondTime = datas[1].time ?? 0;
-    int time = secondTime - firstTime;
-    time ~/= 1000;
-    //月线
-    if (time >= 24 * 60 * 60 * 28)
-      mFormats = [yy, '-', mm];
-    //日线等
-    else if (time >= 24 * 60 * 60)
-      mFormats = [yy, '-', mm, '-', dd];
-    //小时线等
-    else
-      mFormats = [mm, '-', dd, ' ', HH, ':', nn];
   }
 
   @override

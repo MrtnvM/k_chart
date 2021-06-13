@@ -66,6 +66,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   bgColor: [Colors.white, Colors.white],
                   timeFormat: TimeFormat.YEAR_MONTH_DAY,
                   priceFormatter: (value) => '${value.toInt()} ₽',
+                  language: KChartLanguage.russian,
+                  dateFormat: ['dd', '/', 'mm'],
                 ),
               ),
               if (showLoading)
