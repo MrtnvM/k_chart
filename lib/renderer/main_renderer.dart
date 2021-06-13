@@ -9,9 +9,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   final bool isLine;
   late Rect _contentRect;
   double _contentPadding = 20.0;
-  List<int>? maDayList;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
+  final int gridRows;
+  final int gridColumns;
   late Paint _linePaint;
 
   MainRenderer(
@@ -22,9 +23,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     this.isLine,
     this.chartStyle,
     this.chartColors,
-    PriceFormatter priceFormatter, [
-    this.maDayList = const [5, 10, 20],
-  ]) : super(
+    PriceFormatter priceFormatter, {
+    required this.gridRows,
+    required this.gridColumns,
+  }) : super(
           chartRect: mainRect,
           maxValue: maxValue,
           minValue: minValue,

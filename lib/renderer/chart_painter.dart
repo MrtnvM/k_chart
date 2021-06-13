@@ -25,6 +25,9 @@ class ChartPainter extends BaseChartPainter {
   final KChartLanguage language;
   final String Function(double) priceFormatter;
 
+  final int gridRows;
+  final int gridColumns;
+
   ChartPainter(
     this.chartStyle,
     this.chartColors, {
@@ -36,6 +39,8 @@ class ChartPainter extends BaseChartPainter {
     required this.datetimeFormat,
     required this.priceFormatter,
     required this.language,
+    required this.gridRows,
+    required this.gridColumns,
     this.sink,
     required bool isLine,
     this.bgColor,
@@ -72,6 +77,8 @@ class ChartPainter extends BaseChartPainter {
       chartStyle,
       chartColors,
       priceFormatter,
+      gridRows: gridRows,
+      gridColumns: gridColumns,
     );
   }
 
@@ -111,7 +118,7 @@ class ChartPainter extends BaseChartPainter {
 
   @override
   void drawGrid(canvas) {
-    mMainRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
+    mMainRenderer?.drawGrid(canvas, gridRows, gridColumns);
   }
 
   @override
@@ -135,17 +142,17 @@ class ChartPainter extends BaseChartPainter {
   @override
   void drawRightText(canvas) {
     var textStyle = getTextStyle(this.chartColors.defaultTextColor);
-    mMainRenderer?.drawRightText(canvas, textStyle, mGridRows);
+    mMainRenderer?.drawRightText(canvas, textStyle, gridRows);
   }
 
   @override
   void drawDate(Canvas canvas, Size size) {
-    double columnSpace = size.width / mGridColumns;
+    double columnSpace = size.width / gridColumns;
     double startX = getX(mStartIndex) - mPointWidth / 2;
     double stopX = getX(mStopIndex) + mPointWidth / 2;
     double y = 0.0;
 
-    for (var i = 0; i <= mGridColumns; ++i) {
+    for (var i = 0; i <= gridColumns; ++i) {
       double translateX = xToTranslateX(columnSpace * i);
       if (translateX >= startX && translateX <= stopX) {
         int index = indexOfTranslateX(translateX);

@@ -14,7 +14,7 @@ class ChartColors {
   Color selectFillColor = Color(0xff0D1722);
 
   Color gridColor = Colors.grey.withAlpha(100);
-  Color yAxisLabelBackground = Color(0xFFFDFDFD);
+  Color yAxisLabelBackground = Colors.white;
 }
 
 class ChartStyle {

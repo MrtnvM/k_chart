@@ -67,6 +67,9 @@ class KChartWidget extends StatefulWidget {
   final List<InfoWindowElement> infoWindowElements;
   final PriceFormatter priceFormatter;
 
+  final int gridRows;
+  final int gridColumns;
+
   KChartWidget(
     this.datas,
     this.chartStyle,
@@ -85,6 +88,8 @@ class KChartWidget extends StatefulWidget {
     this.infoWindowDateFormat = TimeFormat.YEAR_MONTH_DAY,
     this.infoWindowElements = defaultInfoWindowElements,
     this.language = KChartLanguage.english,
+    this.gridRows = 4,
+    this.gridColumns = 5,
   });
 
   @override
@@ -142,6 +147,8 @@ class _KChartWidgetState extends State<KChartWidget>
       datetimeFormat: widget.dateFormat,
       language: widget.language,
       priceFormatter: widget.priceFormatter,
+      gridRows: widget.gridRows,
+      gridColumns: widget.gridColumns,
     );
 
     return ClipRRect(
